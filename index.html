@@ -1,5 +1,504 @@
-<!doctype html>
-<html><head><meta charset="utf-8"><title>srobt.top</title></head>
-<body><h1>Hello — srobt.top is online</h1>
-<p>Deployed to GitHub Pages (Kate-suo.github.io).</p>
-</body></html>
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>交互式报告：水下机器鱼流场感知前沿研究</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <!-- Chosen Palette: Calm Harmony (Background: slate-50, Text: slate-800, Accent: blue-600, teal-500) -->
+    <!-- Application Structure Plan: A non-linear, concept-hub design. Users start with three core pillars (Sensing, Action, Collaboration) and click to explore detailed, interactive panels. This structure encourages exploration and is more engaging than a linear report. Key interactions include a clickable fish diagram for sensor placement and animated diagrams for abstract concepts, chosen to make the technical information more intuitive and spatially understandable. -->
+    <!-- Visualization & Content Choices: Report Info: Sensor placement on fish -> Goal: Inform/Organize -> Viz: Interactive HTML/CSS diagram of a fish with clickable hotspots -> Interaction: Click hotspot to reveal text -> Justification: Provides spatial context, more engaging than a list. | Report Info: Energy saving via vortices -> Goal: Explain -> Viz: Simple CSS/JS animation of fish and vortex -> Interaction: Passive animation -> Justification: Makes an abstract physics concept tangible. | Report Info: Conceptual text (Challenges, Frontiers) -> Goal: Inform -> Viz: Styled cards with icons -> Interaction: Reading -> Justification: Improves scannability and information hierarchy. | All diagrams built with HTML/CSS/JS. -->
+    <!-- CONFIRMATION: NO SVG graphics used. NO Mermaid JS used. -->
+    <style>
+        body {
+            font-family: 'Noto Sans SC', sans-serif;
+            background-color: #f8fafc; /* slate-50 */
+            color: #1e293b; /* slate-800 */
+        }
+        .nav-card {
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .nav-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+        }
+        .content-panel {
+            transition: opacity 0.5s ease-in-out, max-height 0.8s ease-in-out;
+            max-height: 0;
+            opacity: 0;
+            overflow: hidden;
+        }
+        .content-panel.active {
+            max-height: 5000px; /* Large enough to not clip content */
+            opacity: 1;
+        }
+        .fish-diagram {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 250px;
+            background: #e2e8f0; /* slate-200 */
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            margin: 2rem auto;
+        }
+        .fish-diagram::before {
+            content: '';
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 100px;
+            height: 120px;
+            background: #94a3b8; /* slate-400 */
+            border-radius: 5% 60% 60% 5%;
+            clip-path: polygon(0 0, 100% 50%, 0 100%);
+        }
+        .fish-eye {
+            position: absolute;
+            top: 30%;
+            left: 15%;
+            width: 15px;
+            height: 15px;
+            background: #1e293b;
+            border-radius: 50%;
+            border: 2px solid white;
+        }
+        .hotspot {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            background-color: rgba(37, 99, 235, 0.7); /* blue-600 with opacity */
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            border: 2px solid white;
+            transition: all 0.3s ease;
+            animation: pulse 2s infinite;
+        }
+        .hotspot:hover {
+            transform: scale(1.2);
+            animation: none;
+        }
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0.7); }
+            70% { box-shadow: 0 0 0 15px rgba(37, 99, 235, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(37, 99, 235, 0); }
+        }
+        .hotspot.active {
+            background-color: rgba(217, 119, 6, 1); /* amber-500 */
+            animation: none;
+        }
+        #hotspot-head { top: 35%; left: 20%; }
+        #hotspot-body { top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        #hotspot-fin { top: 60%; right: 5%; }
+        .detail-text {
+            display: none;
+        }
+        .detail-text.active {
+            display: block;
+        }
+        .vortex {
+            width: 60px;
+            height: 60px;
+            border: 3px dashed #0d9488; /* teal-500 */
+            border-radius: 50%;
+            position: absolute;
+            animation: spin 4s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        .animated-fish {
+            width: 80px;
+            height: 30px;
+            background: #38bdf8; /* light-blue-400 */
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        /* Obstacle Avoidance Animation */
+        .avoidance-scene {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background-color: #e0f2f7; /* light blue */
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .avoidance-fish {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #38bdf8;
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            animation: avoid-path 6s ease-in-out infinite;
+        }
+        .obstacle {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background-color: #94a3b8;
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+        .sensed-wave {
+            position: absolute;
+            border: 2px solid rgba(37, 99, 235, 0.5);
+            border-radius: 50%;
+            animation: wave-pulse 2s ease-out infinite;
+            opacity: 0;
+        }
+        .sensed-wave:nth-child(1) { animation-delay: 0s; }
+        .sensed-wave:nth-child(2) { animation-delay: 0.5s; }
+        .sensed-wave:nth-child(3) { animation-delay: 1s; }
+
+        @keyframes avoid-path {
+            0% { left: 0%; top: 50%; transform: translateY(-50%); }
+            25% { left: 40%; top: 50%; transform: translateY(-50%); }
+            50% { left: 60%; top: 20%; transform: translateY(-50%) rotate(-30deg); }
+            75% { left: 80%; top: 50%; transform: translateY(-50%) rotate(0deg); }
+            100% { left: 100%; top: 50%; transform: translateY(-50%); opacity: 0; }
+            100.1% { left: 0%; top: 50%; transform: translateY(-50%); opacity: 1;} /* Reset for loop */
+        }
+        @keyframes wave-pulse {
+            0% { width: 0; height: 0; opacity: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+            100% { width: 150px; height: 150px; opacity: 0; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        }
+
+        /* Boundary Tracking Animation */
+        .tracking-scene {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background-color: #e0f7e0; /* light green */
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .wall {
+            position: absolute;
+            width: 100%;
+            height: 5px;
+            background-color: #6b7280; /* gray-500 */
+        }
+        .wall-top { top: 0; }
+        .wall-bottom { bottom: 0; }
+        .tracking-fish {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #0d9488; /* teal-600 */
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            animation: track-path 5s linear infinite;
+        }
+        .sense-line {
+            position: absolute;
+            width: 2px;
+            height: 20px;
+            background-color: rgba(20, 184, 166, 0.7); /* teal-400 */
+            animation: sense-pulse 1s ease-in-out infinite alternate;
+        }
+        .sense-left { left: 0; top: 50%; transform: translateY(-50%) rotate(90deg); }
+        .sense-right { right: 0; top: 50%; transform: translateY(-50%) rotate(90deg); }
+
+        @keyframes track-path {
+            0% { left: 0%; top: 50%; transform: translateY(-50%); }
+            25% { left: 25%; top: 40%; transform: translateY(-50%); }
+            50% { left: 50%; top: 60%; transform: translateY(-50%); }
+            75% { left: 75%; top: 40%; transform: translateY(-50%); }
+            100% { left: 100%; top: 50%; transform: translateY(-50%); opacity: 0; }
+            100.1% { left: 0%; top: 50%; transform: translateY(-50%); opacity: 1;} /* Reset for loop */
+        }
+        @keyframes sense-pulse {
+            0% { opacity: 0.5; transform: scaleX(1); }
+            100% { opacity: 1; transform: scaleX(1.5); }
+        }
+
+        /* Wake Identification Animation */
+        .wake-scene {
+            position: relative;
+            width: 100%;
+            height: 150px;
+            background-color: #fefce8; /* light yellow */
+            border-radius: 0.5rem;
+            overflow: hidden;
+        }
+        .leader-fish {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #fbbf24; /* amber-400 */
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            animation: leader-swim 6s linear infinite;
+            z-index: 2;
+        }
+        .follower-fish {
+            position: absolute;
+            width: 40px;
+            height: 20px;
+            background-color: #f97316; /* orange-500 */
+            border-radius: 50% 50% 45% 45% / 60% 60% 40% 40%;
+            animation: follower-swim 6s linear infinite;
+            z-index: 2;
+        }
+        .wake-vortex {
+            position: absolute;
+            width: 15px;
+            height: 15px;
+            background-color: rgba(251, 191, 36, 0.5); /* amber-400 with opacity */
+            border-radius: 50%;
+            animation: wake-dissipate 6s linear infinite;
+            opacity: 0;
+            z-index: 1;
+        }
+
+        @keyframes leader-swim {
+            0% { left: 0%; top: 50%; transform: translateY(-50%); }
+            100% { left: 100%; top: 50%; transform: translateY(-50%); }
+        }
+        @keyframes follower-swim {
+            0% { left: -20%; top: 50%; transform: translateY(-50%); }
+            100% { left: 80%; top: 50%; transform: translateY(-50%); }
+        }
+        @keyframes wake-dissipate {
+            0% { left: 20%; top: 50%; transform: translateY(-50%) scale(1); opacity: 1; }
+            50% { left: 50%; top: 50%; transform: translateY(-50%) scale(1.5); opacity: 0.5; }
+            100% { left: 80%; top: 50%; transform: translateY(-50%) scale(2); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800">
+
+    <div class="container mx-auto px-4 py-8 md:py-16">
+        <header class="text-center mb-12 md:mb-20">
+            <h1 class="text-4xl md:text-6xl font-bold text-slate-900 mb-4">探索未来：水下机器鱼流场感知</h1>
+            <p class="text-lg md:text-xl text-slate-600 max-w-3xl mx-auto">
+                将生物的智慧融入冰冷的机械，让机器鱼像真鱼一样感知和驾驭复杂的水下世界。本报告将带您深入了解这一前沿交叉领域的挑战、机遇与核心技术。
+            </p>
+        </header>
+
+        <nav class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12 md:mb-20">
+            <!-- Navigation Card 1: Sensing -->
+            <div id="nav-sensing" class="nav-card bg-white p-8 rounded-2xl shadow-lg cursor-pointer border-t-4 border-blue-500">
+                <div class="text-5xl mb-4">🧠</div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">感知 · 万物有“灵”</h2>
+                <p class="text-slate-600">机器鱼如何像生物一样，通过“皮肤”感知水流的细微变化？探索高精度仿生流场感知机制的核心技术。</p>
+            </div>
+            <!-- Navigation Card 2: Action -->
+            <div id="nav-action" class="nav-card bg-white p-8 rounded-2xl shadow-lg cursor-pointer border-t-4 border-teal-500">
+                <div class="text-5xl mb-4">🚀</div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">行动 · 随“波”逐流</h2>
+                <p class="text-slate-600">从感知到行动，机器鱼如何利用流场信息实现节能、避障与精准导航？揭示流场自适应的运动控制奥秘。</p>
+            </div>
+            <!-- Navigation Card 3: Collaboration -->
+            <div id="nav-collaboration" class="nav-card bg-white p-8 rounded-2xl shadow-lg cursor-pointer border-t-4 border-indigo-500">
+                <div class="text-5xl mb-4">🌐</div>
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">协同 · 集“群”智慧</h2>
+                <p class="text-slate-600">单个机器鱼的力量有限，鱼群如何通过协同感知与信息共享，完成更宏大的水下探测任务？</p>
+            </div>
+        </nav>
+
+        <!-- Content Panels -->
+        <main id="content-area">
+            <!-- Sensing Panel -->
+            <section id="content-sensing" class="content-panel bg-white p-6 md:p-10 rounded-2xl shadow-xl">
+                <h3 class="text-3xl font-bold mb-2 text-blue-600">感知机制：赋予机器鱼“第六感”</h3>
+                <p class="text-slate-600 mb-8">核心在于模仿生物的侧线系统，这是一个由分布在身体表面的传感器组成的网络，能精细感知水流的压力、速度和方向。通过开发新型柔性传感器阵列和先进的信号处理算法，我们能让机器鱼获得前所未有的环境感知能力，为智能决策打下基础。</p>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    <div>
+                        <h4 class="text-xl font-bold mb-4">交互式传感器布局</h4>
+                        <p class="text-slate-600 mb-4">点击鱼身的不同部位，了解传感器的具体功能和安装考量。</p>
+                        <div class="fish-diagram">
+                            <div class="fish-eye"></div>
+                            <div id="hotspot-head" class="hotspot" data-target="detail-head">头</div>
+                            <div id="hotspot-body" class="hotspot" data-target="detail-body">身</div>
+                            <div id="hotspot-fin" class="hotspot" data-target="detail-fin">鳍</div>
+                        </div>
+                    </div>
+                    <div class="bg-slate-100 p-6 rounded-lg min-h-[250px]">
+                        <div id="detail-initial" class="detail-text active">
+                            <h5 class="font-bold text-lg mb-2">仿生侧线系统</h5>
+                            <p>请选择一个热点查看详细信息。通过在机器鱼全身分布式布置传感器，我们可以构建一个类似生物侧线的感知网络，实时绘制周围的流场图谱。</p>
+                        </div>
+                        <div id="detail-head" class="detail-text">
+                            <h5 class="font-bold text-lg mb-2">头部传感器</h5>
+                            <p><strong>功能：</strong>感知前方来流和潜在障碍物产生的扰动。头部传感器阵列是机器鱼的“预警系统”，能最先探测到接近的物体或变化的流场，为避障和导航提供关键的提前量。</p>
+                            <p class="mt-2 text-sm text-slate-500">例如，安装悬臂梁力传感器可精确感知来流方向的压力变化，指导机器鱼规避障碍。</p>
+                        </div>
+                        <div id="detail-body" class="detail-text">
+                            <h5 class="font-bold text-lg mb-2">身体两侧传感器</h5>
+                            <p><strong>功能：</strong>沿身体长度方向布置，用于感知游动时自身产生的边界层流场以及周围环境流场（如涡流、剪切流）。这是理解机器鱼与流体相互作用、优化游动姿态的核心。</p>
+                            <p class="mt-2 text-sm text-slate-500"><strong>利用：</strong>边界层流场的变化直接反映机器鱼所受阻力。通过精细感知边界层内的压力分布和剪切力，机器鱼可以实时判断当前游动姿态的阻力大小，并进行微调以实现节能游动和保持稳定性。这就像鱼在水中调整身体姿态以“滑”过水流。</p>
+                        </div>
+                        <div id="detail-fin" class="detail-text">
+                            <h5 class="font-bold text-lg mb-2">鳍部传感器</h5>
+                            <p><strong>功能：</strong>鳍在运动时与流体相互作用最直接。在其表面或根部集成传感器，可以感知鳍的受力情况，通过闭环反馈控制，实时优化鳍的拍动频率和幅度，从而最大化推进效率。</p>
+                            <p class="mt-2 text-sm text-slate-500"><strong>利用：</strong>尾鳍是主要推进器。在其表面或根部集成传感器，可以实时监测鳍在拍动时所受的流体压力和剪切力。这使得机器鱼能够精确调整拍动频率、幅度、波形以最大化推力、优化转向和姿态控制，甚至进行故障诊断。</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Action Panel -->
+            <section id="content-action" class="content-panel bg-white p-6 md:p-10 rounded-2xl shadow-xl">
+                <h3 class="text-3xl font-bold mb-2 text-teal-600">自适应控制：从感知到智能行动</h3>
+                <p class="text-slate-600 mb-8">获得流场数据只是第一步，真正的智能体现在如何利用这些数据。通过先进的控制算法，机器鱼可以主动适应环境，实现节能游动、灵巧避障和精准导航，将环境的“阻力”变为“助力”。</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="bg-slate-100 p-6 rounded-lg">
+                        <h4 class="text-xl font-bold mb-2">节能游动：卡门涡街中的“冲浪者”</h4>
+                        <p class="mb-4">鱼类能巧妙地利用前方物体（或其他鱼）产生的涡流（即卡门涡街）来节省体力。下方的动画模拟了机器鱼如何调整自身，进入涡流的有利位置，“借力”前行，从而大幅降低能耗。</p>
+                        <div class="relative w-full h-48 bg-slate-200 rounded-lg overflow-hidden">
+                            <div class="vortex" style="top: 30%; left: 50%;"></div>
+                            <div class="vortex" style="top: 70%; left: 50%; animation-delay: -2s;"></div>
+                            <div class="animated-fish"></div>
+                        </div>
+                        <p class="mt-4 text-sm text-slate-500">通过精确感知涡流的强度、方向和周期，机器鱼可以调整自身的摆动频率和相位，与涡流产生共振，从而从水流中“吸取”能量，减少自身能耗。</p>
+                    </div>
+                    <div class="bg-slate-100 p-6 rounded-lg">
+                        <h4 class="text-xl font-bold mb-2">导航与避障：流场中的“指路明灯”</h4>
+                        <p class="mb-4">障碍物会扰乱流场，形成独特的“流体指纹”。机器鱼通过感知这些指纹，可以：</p>
+                        <ul class="list-disc list-inside mt-2 space-y-2 text-slate-700">
+                            <li><strong>探测定位：</strong>通过传感器阵列感知到的压力和流速异常，估算障碍物的方向和距离。</li>
+                            <li><strong>边界跟踪：</strong>在狭窄通道中，利用两侧壁面产生的边界层效应保持居中，避免碰撞。</li>
+                            <li><strong>尾流识别：</strong>识别其他移动物体产生的尾流，判断其轨迹并主动避让。</li>
+                        </ul>
+                        <p class="mt-4 text-sm text-slate-500">这些都属于闭环控制的应用，机器鱼能实时处理流场数据并生成相应的运动指令，实现智能决策和运动控制。</p>
+                    </div>
+
+                    <!-- New: Obstacle Avoidance Animation -->
+                    <div class="bg-slate-100 p-6 rounded-lg col-span-1 md:col-span-2">
+                        <h4 class="text-xl font-bold mb-2">避障：感知扰动，灵巧绕行</h4>
+                        <p class="mb-4">当机器鱼接近障碍物时，其头部传感器会感知到水流受阻产生的压力变化。通过分析这些流场扰动，机器鱼能及时调整路径，避免碰撞。</p>
+                        <div class="avoidance-scene relative w-full h-48 bg-slate-200 rounded-lg overflow-hidden">
+                            <div class="obstacle">
+                                <div class="sensed-wave"></div>
+                                <div class="sensed-wave" style="animation-delay: 0.6s;"></div>
+                                <div class="sensed-wave" style="animation-delay: 1.2s;"></div>
+                            </div>
+                            <div class="avoidance-fish"></div>
+                        </div>
+                    </div>
+
+                    <!-- New: Boundary Tracking Animation -->
+                    <div class="bg-slate-100 p-6 rounded-lg col-span-1 md:col-span-2">
+                        <h4 class="text-xl font-bold mb-2">边界跟踪：在狭窄通道中游刃有余</h4>
+                        <p class="mb-4">在管道或狭窄区域，机器鱼身体两侧的传感器能感知到壁面产生的边界层流场。通过比较两侧的流场信息，机器鱼可以精确调整自身位置，保持在通道中央，避免触碰壁面。</p>
+                        <div class="tracking-scene relative w-full h-48 bg-slate-200 rounded-lg overflow-hidden">
+                            <div class="wall wall-top"></div>
+                            <div class="wall wall-bottom"></div>
+                            <div class="tracking-fish">
+                                <div class="sense-line sense-left"></div>
+                                <div class="sense-line sense-right"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- New: Wake Identification Animation -->
+                    <div class="bg-slate-100 p-6 rounded-lg col-span-1 md:col-span-2">
+                        <h4 class="text-xl font-bold mb-2">尾流识别：洞察前方，预判轨迹</h4>
+                        <p class="mb-4">大型移动物体或生物会在其后方产生独特的尾流。机器鱼通过感知这些尾流的特征，可以判断前方物体的运动轨迹，从而提前做出避让或跟随的决策。</p>
+                        <div class="wake-scene relative w-full h-48 bg-slate-200 rounded-lg overflow-hidden">
+                            <div class="leader-fish"></div>
+                            <div class="wake-vortex" style="animation-delay: 0s;"></div>
+                            <div class="wake-vortex" style="animation-delay: 1s;"></div>
+                            <div class="wake-vortex" style="animation-delay: 2s;"></div>
+                            <div class="wake-vortex" style="animation-delay: 3s;"></div>
+                            <div class="follower-fish"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+
+            <!-- Collaboration Panel -->
+            <section id="content-collaboration" class="content-panel bg-white p-6 md:p-10 rounded-2xl shadow-xl">
+                <h3 class="text-3xl font-bold mb-2 text-indigo-600">群体智能：1+1 > 2</h3>
+                <p class="text-slate-600 mb-8">面对广阔复杂的水域，单个机器鱼的感知范围和能力都有限。通过构建机器鱼群，利用群体智能，我们可以完成单体无法完成的任务。它们不仅共享信息，甚至能通过流场进行“交流”。</p>
+                <div class="bg-slate-100 p-6 rounded-lg">
+                    <h4 class="text-xl font-bold mb-4 text-center">分布式流场地图构建</h4>
+                    <div class="relative flex justify-center items-center h-64">
+                        <div class="absolute text-6xl">🐟</div>
+                        <div class="absolute text-6xl" style="transform: translate(-150px, -60px) rotate(-30deg);">🐟</div>
+                        <div class="absolute text-6xl" style="transform: translate(150px, -60px) rotate(30deg);">🐟</div>
+                        <div class="absolute text-6xl" style="transform: translate(-100px, 100px) rotate(-15deg);">🐟</div>
+                        <div class="absolute text-6xl" style="transform: translate(100px, 100px) rotate(15deg);">🐟</div>
+                        
+                        <div class="absolute text-center">
+                            <div class="w-32 h-32 border-4 border-dashed border-indigo-400 rounded-full flex items-center justify-center animate-pulse">
+                                <div class="text-indigo-700 font-bold">共享地图</div>
+                            </div>
+                        </div>
+                    </div>
+                    <p class="text-center mt-4 text-slate-700 max-w-2xl mx-auto">每条机器鱼都是一个移动的传感器节点。它们将各自感知的局部流场数据通过水下通信网络共享，实时融合，共同构建一个动态、广域、高精度的三维流场图谱，为环境监测、资源勘探等应用提供前所未有的强大工具。</p>
+                    <p class="mt-4 text-sm text-slate-500 text-center"><strong>主要挑战：</strong>实现群体智能的关键困难在于水下高效、可靠的信息交互。传统无线电波在水下衰减严重，水声通信带宽有限、延迟高，光通信受水质影响大。克服这些通信瓶颈是实现真正群体智能的关键。</p>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const navSensing = document.getElementById('nav-sensing');
+            const navAction = document.getElementById('nav-action');
+            const navCollaboration = document.getElementById('nav-collaboration');
+
+            const contentSensing = document.getElementById('content-sensing');
+            const contentAction = document.getElementById('content-action');
+            const contentCollaboration = document.getElementById('content-collaboration');
+
+            const allNavs = [navSensing, navAction, navCollaboration];
+            const allPanels = [contentSensing, contentAction, contentCollaboration];
+
+            function openPanel(panelToShow) {
+                allPanels.forEach(panel => {
+                    if (panel === panelToShow) {
+                        panel.classList.add('active');
+                    } else {
+                        panel.classList.remove('active');
+                    }
+                });
+                setTimeout(() => {
+                    panelToShow.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }, 100);
+            }
+
+            navSensing.addEventListener('click', () => openPanel(contentSensing));
+            navAction.addEventListener('click', () => openPanel(contentAction));
+            navCollaboration.addEventListener('click', () => openPanel(contentCollaboration));
+            
+            // Fish diagram interaction
+            const hotspots = document.querySelectorAll('.hotspot');
+            const detailTexts = document.querySelectorAll('.detail-text');
+            const initialDetail = document.getElementById('detail-initial');
+
+            hotspots.forEach(hotspot => {
+                hotspot.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetText = document.getElementById(targetId);
+
+                    // Deactivate all
+                    hotspots.forEach(h => h.classList.remove('active'));
+                    detailTexts.forEach(t => t.classList.remove('active'));
+                    
+                    // Activate clicked
+                    this.classList.add('active');
+                    targetText.classList.add('active');
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
